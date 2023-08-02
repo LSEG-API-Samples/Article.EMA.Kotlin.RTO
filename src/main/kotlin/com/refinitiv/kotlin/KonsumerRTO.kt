@@ -4,22 +4,21 @@ import com.refinitiv.ema.access.*
 import com.refinitiv.ema.domain.login.Login.LoginRefresh
 import com.refinitiv.ema.domain.login.Login.LoginStatus
 import com.refinitiv.ema.rdm.EmaRdm
-//import io.github.cdimascio.dotenv.dotenv
+import io.github.cdimascio.dotenv.dotenv
 
 class KonsumerRTO {
 
     private val tokenUrlV2 = "https://api.refinitiv.com/auth/oauth2/v2/token"
-    private val itemName = "/TRI.N"
+    private val itemName = "EUR="
 
     fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
 
         var consumer: OmmConsumer? = null
-        val serviceDiscovery: ServiceEndpointDiscovery? = null
         val oAuthCallback = OAuthcallback()
         val credentials = CredentialStore(clientId, clientSecret, consumer)
 
         try {
-            val appClient: AppClient = AppClient()
+            val appClient = AppClient()
             val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
 
             consumer = EmaFactory.createOmmConsumer(
@@ -34,8 +33,21 @@ class KonsumerRTO {
             val loginReq = EmaFactory.Domain.createLoginReq()
             consumer.registerClient(loginReq.message(), appClient)
 
+            // --------------------------------- View  ---------------------------
+            val view = EmaFactory.createElementList()
+            val arrayView = EmaFactory.createOmmArray()
 
-            consumer.registerClient(EmaFactory.createReqMsg().serviceName(serviceName).name(itemName), appClient)
+            arrayView.fixedWidth(2)
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(22)) //BID
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(25)) //ASK
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(15)) //CURRENCY
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(875)) //CURRENT DATE
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(1010)) //CURRENT DATE
+
+            view.add(EmaFactory.createElementEntry().uintValue(EmaRdm.ENAME_VIEW_TYPE, 1))
+            view.add(EmaFactory.createElementEntry().array(EmaRdm.ENAME_VIEW_DATA, arrayView))
+
+            consumer.registerClient(EmaFactory.createReqMsg().serviceName(serviceName).payload(view).name(itemName), appClient)
             Thread.sleep(900000)
         } catch (excp: InterruptedException) {
             println(excp.message)
@@ -49,14 +61,18 @@ class KonsumerRTO {
 
 
 fun main() {
-//    val dotenv = dotenv()
-//    val clientId: String = dotenv["CLIENT_ID"]
-//    val clientSecret: String = dotenv["CLIENT_SECRET"]
-//    val serviceName: String = dotenv["SERVICENAME"]
+    //val dotenv = Dotenv.configure().ignoreIfMalformed().load()
+    val dotenv = dotenv {
+        ignoreIfMalformed = true
+        ignoreIfMissing = true
+    }
+    val clientId: String = dotenv["CLIENT_ID"]
+    val clientSecret: String = dotenv["CLIENT_SECRET"]
+    val serviceName: String = dotenv["SERVICENAME"]
 
-    val clientId: String = System.getenv("CLIENT_ID")
-    val clientSecret: String = System.getenv("CLIENT_SECRET")
-    val serviceName: String = System.getenv("SERVICENAME")
+//    val clientId: String = System.getenv("CLIENT_ID")
+//    val clientSecret: String = System.getenv("CLIENT_SECRET")
+//    val serviceName: String = System.getenv("SERVICENAME")
 
 
     val appRTO = KonsumerRTO()
@@ -143,39 +159,23 @@ class AppClient : OmmConsumerClient {
     private fun decode(fieldList: FieldList) {
         for (fieldEntry: FieldEntry in fieldList) {
             print(
-                "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
-                    DataType.asString(
-                        fieldEntry.load().dataType()
-                    )
-                } Value: "
+                "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${DataType.asString(fieldEntry.load().dataType())} Value: "
             )
-
             if (Data.DataCode.BLANK == fieldEntry.code()) {
                 println(" blank")
             } else {
                 when (fieldEntry.loadType()) {
                     DataType.DataTypes.REAL -> println(fieldEntry.real().asDouble())
-                    DataType.DataTypes.DATE -> println(
-                        fieldEntry.date().day().toString() + " / " + fieldEntry.date()
-                            .month() + " / " + fieldEntry.date().year()
-                    )
-
                     DataType.DataTypes.TIME -> println(
-                        fieldEntry.time().hour().toString() + ":" + fieldEntry.time().minute() + ":" + fieldEntry.time()
-                            .second() + ":" + fieldEntry.time().millisecond()
+                        "${fieldEntry.time().hour()} : ${fieldEntry.time().minute()} : ${fieldEntry.time().second()} : ${fieldEntry.time().millisecond()}"
                     )
-
-                    DataType.DataTypes.INT -> println(fieldEntry.intValue())
-                    DataType.DataTypes.UINT -> println(fieldEntry.uintValue())
-                    DataType.DataTypes.ASCII -> println(fieldEntry.ascii())
+                    DataType.DataTypes.DATE -> println(
+                        "${fieldEntry.date().day()} / ${fieldEntry.date().month()} / ${fieldEntry.date().year()}"
+                    )
                     DataType.DataTypes.ENUM -> println(if (fieldEntry.hasEnumDisplay()) fieldEntry.enumDisplay() else fieldEntry.enumValue())
-                    DataType.DataTypes.RMTES -> println(fieldEntry.rmtes())
                     DataType.DataTypes.ERROR -> println(
-                        "${fieldEntry.error().errorCode()} (${
-                            fieldEntry.error().errorCodeAsString()
-                        })"
+                        "${fieldEntry.error().errorCode()} (${fieldEntry.error().errorCodeAsString()})"
                     )
-
                     else -> println()
                 }
             }
