@@ -15,7 +15,9 @@ ALL EXAMPLE CODE IS PROVIDED ON AN “AS IS” AND “AS AVAILABLE” BASIS FOR 
 The [How to Implement EMA Java Application with Kotlin Language](https://developers.refinitiv.com/en/article-catalog/article/how-to-implement-ema-java-application-with-kotlin-language) article shows how to implement Enterprise Message API (EMA) Java Consumer and Interactive Provider applications using Kotlin. This article shows a step-by-step guide to built the EMA Java Consumer application to connect and consume real-time streaming data from the Cloud (Refinitiv Real-Time Optimized, aka RTO).
 
 
-Note: This example project uses Kotlin version 1.9.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)
+Note: 
+- This example project uses Kotlin version 1.9.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)
+- I am demonstrating with the Version 2 Authentication
 
 ## <a id="kotlin_overview"></a>Kotlin Overview
 
@@ -26,6 +28,30 @@ One major benefit for Java developers is integration with Java code and librarie
 ## <a id="prerequisite"></a>Prerequisite
 
 Before I am going further, there is some prerequisite, dependencies, and libraries that the project is needed.
+
+### Java SDK
+
+Firstly, you need Java SDK. Please check for the supported Java version from the [API Compatibility Matrix](https://developers.refinitiv.com/en/api-catalog/refinitiv-real-time-opnsrc/rt-sdk-java/documentation#api-compatibility-matrix) page. 
+
+I am using the Open JDK version 11 in this project (as of April 2023).
+
+### Maven
+
+Next, the [Maven](https://maven.apache.org/) build automation tool. Please follow [Apache Maven installation guide document](https://maven.apache.org/install.html).
+
+### Docker or IntelliJ IDEA
+
+The example project is a console application that can be run on [Docker](https://www.docker.com/) or [IntelliJ IDEA](https://www.jetbrains.com/idea/) editor.
+
+### Access to the RTO
+
+This project uses RTO access credentials for both Version 1 Authentication (Machine ID type) and Version 2 Authentication (Service ID)
+
+Please contact your Refinitiv representative to help you with the RTO account and services.
+
+### Internet Access
+
+This demonstration connects to RTO on AWS via a public internet.
 
 TBD
 

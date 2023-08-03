@@ -1,3 +1,10 @@
+///*|----------------------------------------------------------------------------------------------------
+// *|            This source code is provided under the Apache 2.0 license                             --
+// *|  and is provided AS IS with no warranty or guarantee of fit for purpose.                         --
+// *|                See the project's LICENSE.md for details.                                         --
+// *|           Copyright (C) 2020-2023 Refinitiv. All rights reserved.                                --
+///*|----------------------------------------------------------------------------------------------------
+
 package com.refinitiv.kotlin
 
 import com.refinitiv.ema.access.*
@@ -61,7 +68,6 @@ class KonsumerRTO {
 
 
 fun main() {
-    //val dotenv = Dotenv.configure().ignoreIfMalformed().load()
     val dotenv = dotenv {
         ignoreIfMalformed = true
         ignoreIfMissing = true
@@ -69,11 +75,6 @@ fun main() {
     val clientId: String = dotenv["CLIENT_ID"]
     val clientSecret: String = dotenv["CLIENT_SECRET"]
     val serviceName: String = dotenv["SERVICENAME"]
-
-//    val clientId: String = System.getenv("CLIENT_ID")
-//    val clientSecret: String = System.getenv("CLIENT_SECRET")
-//    val serviceName: String = System.getenv("SERVICENAME")
-
 
     val appRTO = KonsumerRTO()
     appRTO.run(clientId, clientSecret, serviceName)
