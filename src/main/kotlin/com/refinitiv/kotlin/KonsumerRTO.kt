@@ -48,8 +48,8 @@ class KonsumerRTO {
             arrayView.add(EmaFactory.createOmmArrayEntry().intValue(22)) //BID
             arrayView.add(EmaFactory.createOmmArrayEntry().intValue(25)) //ASK
             arrayView.add(EmaFactory.createOmmArrayEntry().intValue(15)) //CURRENCY
-            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(875)) //CURRENT DATE
-            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(1010)) //CURRENT DATE
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(875)) //VALUE_DT1
+            arrayView.add(EmaFactory.createOmmArrayEntry().intValue(1010)) //VALUE_TS1
 
             view.add(EmaFactory.createElementEntry().uintValue(EmaRdm.ENAME_VIEW_TYPE, 1))
             view.add(EmaFactory.createElementEntry().array(EmaRdm.ENAME_VIEW_DATA, arrayView))

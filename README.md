@@ -12,18 +12,36 @@ ALL EXAMPLE CODE IS PROVIDED ON AN “AS IS” AND “AS AVAILABLE” BASIS FOR 
 
 [Refinitiv Real-Time SDK (Java Edition)](https://developers.refinitiv.com/en/api-catalog/refinitiv-real-time-opnsrc/rt-sdk-java) (RTSDK, formerly known as Elektron SDK) is a suite of modern and open source APIs that aim to simplify development through a strong focus on ease of use and standardized access to a broad set of Refinitiv proprietary content and services via the proprietary TCP connection named RSSL and proprietary binary message encoding format named OMM Message. The capabilities range from low latency/high-performance APIs right through to simple streaming Web APIs. 
 
-The [How to Implement EMA Java Application with Kotlin Language](https://developers.refinitiv.com/en/article-catalog/article/how-to-implement-ema-java-application-with-kotlin-language) article shows how to implement Enterprise Message API (EMA) Java Consumer and Interactive Provider applications using Kotlin. This article shows a step-by-step guide to built the EMA Java Consumer application to connect and consume real-time streaming data from the Cloud (Refinitiv Real-Time Optimized, aka RTO).
+The [How to Implement EMA Java Application with Kotlin Language](https://developers.refinitiv.com/en/article-catalog/article/how-to-implement-ema-java-application-with-kotlin-language) article shows how to implement Enterprise Message API (EMA) Java Consumer and Interactive Provider applications using Kotlin. This article shows a step-by-step guide to build the EMA Java Consumer application to connect and consume real-time streaming data from the Cloud (Refinitiv Real-Time Optimized, aka RTO).
 
 
 Note: 
 - This example project uses Kotlin version 1.9.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)
 - I am demonstrating with the Version 2 Authentication
 
-## <a id="kotlin_overview"></a>Kotlin Overview
+## <a id="kotlin_overview"></a>Introduction to Kotlin
 
-[Kotlin](https://kotlinlang.org/) is a modern, cross-platform, statically-typed, high-level programming language developed by [Jetbrains](https://www.jetbrains.com/). The language syntax is concise, safe, interoperable with Java. Kotlin is designed with fully Java Interoperability in mind, and also can be compiled to JavaScript and iOS/Android native code (via [LLVM](https://llvm.org/)) with many ways to reuse code between multiple platforms for productive programming.  
+[Kotlin](https://kotlinlang.org/) is a modern, cross-platform, statically typed, high-level programming language developed by [Jetbrains](https://www.jetbrains.com/). The language syntax is concise, safe, interoperable with Java. Kotlin is designed with fully Java Interoperability in mind. It can be compiled to JavaScript and iOS/Android native code (via [LLVM](https://llvm.org/)) with many ways to reuse code between multiple platforms for productive programming.  
 
 One major benefit for Java developers is integration with Java code and libraries (including RTSDK Java). Existing Java code can be called from Kotlin in a natural way. Kotlin syntax aims for reducing Java language verbosity and complexity, so Java developers can migrate to Kotlin easily. With a lot of potentials, Kotlin has been chosen by Google to be a first-class programming language on Android OS since 2019.
+
+Kotlin syntax aims for "making developers happier" by reducing Java language verbosity and complexity like the following example:
+
+``` kotlin
+
+fun main() {
+    println("Hello world!")
+    val a = 100
+    val b = 12
+    println("$a + $b = ${sum(a,b)}") //"100 + 12 = 112"
+}
+
+fun sum(a: Int, b: Int): Int {
+    return a + b
+}
+```
+
+That’s all I have to say about Kotlin introduction
 
 ## <a id="prerequisite"></a>Prerequisite
 
@@ -57,18 +75,28 @@ This demonstration connects to RTO on AWS via a public internet.
 
 ### Maven pom.xml file
 
-To use Kotlin with Maven, you need the **kotlin-maven-plugin** to compile Kotlin sources and modules. The first step is define the version of Kotlin via the ```<properties>``` tag as follows:
+Let’s start with the Maven ```pom.xml``` file setting for Kotin. The ```pom.xml``` file the main Maven's project configuration. To use Kotlin with Maven, you need the **kotlin-maven-plugin** to compile Kotlin sources and modules. The first step is defining the version of Kotlin via the ```<properties>``` tag as follows:
 
 ```xml
 <properties>
+    <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
+    <rtsdk.version>3.7.1.0</rtsdk.version>
     <kotlin.version>1.9.0</kotlin.version>
+    <main.class>com.refinitiv.kotlin.KonsumerRTOKt</main.class>
+    ...
 </properties>
 ```
 
-And then set add the Kotlin standard library in the pom.xml dependency setting.
+And then set add the Kotlin standard library in the pom.xml file dependency setting.
 
 ```xml
 <dependencies>
+    <dependency>
+        <groupId>com.refinitiv.ema
+        </groupId>
+        <artifactId>ema</artifactId>
+        <version>${rtsdk.version}</version>
+    </dependency>
     <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib</artifactId>
@@ -77,136 +105,93 @@ And then set add the Kotlin standard library in the pom.xml dependency setting.
 </dependencies>
 ```
 
+For more detail about EMA Java dependency and Maven, please check the [How to Set Up Refinitiv Real-Time SDK Java Application with Maven](https://developers.refinitiv.com/en/article-catalog/article/how-to-set-up-refinitiv-real-time-sdk-java-application-with-mave) article.
+
+Next, set the pom.xml file's source directory and kotlin-maven-plugin plugins to let Maven knows where and how to compile the source code as follows:
+
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>RTO_Kotlin</artifactId>
-    <groupId>com.refinitiv</groupId>
-    <version>1.0</version>
-    <packaging>jar</packaging>
-
-    <name>consoleApp</name>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kotlin.code.style>official</kotlin.code.style>
-        <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
-        <rtsdk.version>3.7.1.0</rtsdk.version>
-        <main.class>com.refinitiv.kotlin.KonsumerRTOKt</main.class>
-        <kotlin.version>1.9.0</kotlin.version>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>mavenCentral</id>
-            <url>https://repo1.maven.org/maven2/</url>
-        </repository>
-    </repositories>
-
-    <build>
-        <sourceDirectory>src/main/kotlin</sourceDirectory>
-        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-maven-plugin</artifactId>
-                <version>{kotlin.version}</version>
-                <executions>
-                    <execution>
-                        <id>compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test-compile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>test-compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.22.2</version>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <configuration>
-                    <mainClass>MainKt</mainClass>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${main.class}</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <dependencies>
-        <dependency>
+<build>
+    <sourceDirectory>src/main/kotlin</sourceDirectory>
+    <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+    <plugins>
+        <plugin>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test-junit5</artifactId>
+            <artifactId>kotlin-maven-plugin</artifactId>
             <version>{kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.9.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
-            <version>{kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>dotenv-kotlin</artifactId>
-            <version>6.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.refinitiv.ema
-            </groupId>
-            <artifactId>ema</artifactId>
-            <version>${rtsdk.version}</version>
-        </dependency>
-    </dependencies>
-
-</project>
+            <executions>
+                <execution>
+                    <id>compile</id>
+                     <phase>compile</phase>
+                    <goals>
+                        <goal>compile</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>test-compile</id>
+                    <phase>test-compile</phase>
+                    <goals>
+                        <goal>test-compile</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        ...
+    <plugins>
+</build>
 ```
-For more detail about EMA Java and Maven, please check the [How to Set Up Refinitiv Real-Time SDK Java Application with Maven](https://developers.refinitiv.com/en/article-catalog/article/how-to-set-up-refinitiv-real-time-sdk-java-application-with-mave) article. 
+You can see a full pom.xml file configurations in the project repository.
 
-For more detail about Kotlin and Maven, please see [Kotlin: Maven build tool](https://kotlinlang.org/docs/maven.html#enable-incremental-compilation) page.
+To learn more about Kotlin and Maven configurations, please see [Kotlin: Maven build tool](https://kotlinlang.org/docs/maven.html#enable-incremental-compilation) page.
+
+## Consumer Application Code Walkthrough
+
+The demo application (*KonsumerRTO.kt*) is based on the EMA Java ex451_MP_OAuth2Callback_V2, ex333_Login_Streaming_DomainRep, series300.ex360_MP_View and ex113_MP_SessionMgmt examples source code to connect and consume real-time streaming from RTO with the View feature.  
+
+### Consumer Creation and Configuration
+
+The **KonsumerRTO.kt** file implements the standard EMA Java Consumer applications with Kotlin syntax mindset. 
+
+An entry point of a Kotlin application is in the ```main``` function, and it does not need to be inside a class like Java. The ```main``` function creates the ```KonsumerRTO``` object, pass the RTO Service ID credential (Version 2 Authentication), and service name information to the ```KonsumerRTO``` object for further EMA-RTO workflow.
+
+``` Java
+import io.github.cdimascio.dotenv.dotenv
+
+fun main() {
+    val dotenv = dotenv {
+        ignoreIfMalformed = true
+        ignoreIfMissing = true
+    }
+    val clientId: String = dotenv["CLIENT_ID"]
+    val clientSecret: String = dotenv["CLIENT_SECRET"]
+    val serviceName: String = dotenv["SERVICENAME"]
+
+    val appRTO = KonsumerRTO()
+    appRTO.run(clientId, clientSecret, serviceName)
+}
+
+class KonsumerRTO {
+
+    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+        //Perform RTO connection logic
+    }
+}
+```
+
+The code use the [dotenv-kotlin](https://github.com/cdimascio/dotenv-kotlin) library to load the RTO credentials and configuration from the environment variable ```.env``` file or the System Environment Variables. To use the dotenv-kotlin library, you just import the ```import io.github.cdimascio.dotenv.dotenv``` package and create the ```dotenv``` object via the ```val dotenv = dotenv {}``` wtih ```ignoreIfMalformed = true``` and ```ignoreIfMissing = true``` properties to populate configurations. After that you can access both system environment variables and ```.env```'s configurations from the ```dotenv.get("...");``` 
+
+Please note that the OS/system's environment variables always override ```.env``` configurations by default as the following example.statement. 
+
+The next step is creating the OmmConsumer object as follows.
+
+``` Java
+class KonsumerRTO {
+
+    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+        var consumer: OmmConsumer? = null
+
+    }
+}
+```
 
 TBD
 
