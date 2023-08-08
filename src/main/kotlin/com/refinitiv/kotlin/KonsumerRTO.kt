@@ -54,7 +54,10 @@ class KonsumerRTO {
             view.add(EmaFactory.createElementEntry().uintValue(EmaRdm.ENAME_VIEW_TYPE, 1))
             view.add(EmaFactory.createElementEntry().array(EmaRdm.ENAME_VIEW_DATA, arrayView))
 
-            consumer.registerClient(EmaFactory.createReqMsg().serviceName(serviceName).payload(view).name(itemName), appClient)
+            consumer.registerClient(
+                EmaFactory.createReqMsg().serviceName(serviceName).payload(view).name(itemName),
+                appClient
+            )
             Thread.sleep(900000)
         } catch (excp: InterruptedException) {
             println(excp.message)
@@ -80,8 +83,14 @@ fun main() {
     appRTO.run(clientId, clientSecret, serviceName)
 }
 
+/* This is for example purposes, For best security, please use a proper credential store. */
 data class CredentialStore(var clientSecret: String, var clientId: String, var consumer: OmmConsumer?)
 
+/* Implementation of OmmOAuth2ConsumerClient.  This is a very basic callback that uses the closure to obtain
+ * the OmmConsumer and call submitOAuthCredentialRenewal.
+ *
+ * This is intended to show functionality, so this example does not implement or use secure credential storage.
+ */
 class OAuthcallback : OmmOAuth2ConsumerClient {
     override fun onOAuth2CredentialRenewal(event: OmmConsumerEvent?) {
         val credentials: CredentialStore? = event?.closure() as CredentialStore?
@@ -160,7 +169,11 @@ class AppClient : OmmConsumerClient {
     private fun decode(fieldList: FieldList) {
         for (fieldEntry: FieldEntry in fieldList) {
             print(
-                "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${DataType.asString(fieldEntry.load().dataType())} Value: "
+                "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
+                    DataType.asString(
+                        fieldEntry.load().dataType()
+                    )
+                } Value: "
             )
             if (Data.DataCode.BLANK == fieldEntry.code()) {
                 println(" blank")
@@ -168,15 +181,20 @@ class AppClient : OmmConsumerClient {
                 when (fieldEntry.loadType()) {
                     DataType.DataTypes.REAL -> println(fieldEntry.real().asDouble())
                     DataType.DataTypes.TIME -> println(
-                        "${fieldEntry.time().hour()} : ${fieldEntry.time().minute()} : ${fieldEntry.time().second()} : ${fieldEntry.time().millisecond()}"
+                        "${fieldEntry.time().hour()} : ${fieldEntry.time().minute()} : ${
+                            fieldEntry.time().second()
+                        } : ${fieldEntry.time().millisecond()}"
                     )
+
                     DataType.DataTypes.DATE -> println(
                         "${fieldEntry.date().day()} / ${fieldEntry.date().month()} / ${fieldEntry.date().year()}"
                     )
+
                     DataType.DataTypes.ENUM -> println(if (fieldEntry.hasEnumDisplay()) fieldEntry.enumDisplay() else fieldEntry.enumValue())
                     DataType.DataTypes.ERROR -> println(
                         "${fieldEntry.error().errorCode()} (${fieldEntry.error().errorCodeAsString()})"
                     )
+
                     else -> println()
                 }
             }

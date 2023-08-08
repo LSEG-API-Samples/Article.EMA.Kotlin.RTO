@@ -151,6 +151,8 @@ The demo application (*KonsumerRTO.kt*) is based on the EMA Java ex451_MP_OAuth2
 
 The **KonsumerRTO.kt** file implements the standard EMA Java Consumer applications with Kotlin syntax mindset. 
 
+#### 1. Set the application entry point
+
 An entry point of a Kotlin application is in the ```main``` function, and it does not need to be inside a class like Java. The ```main``` function creates the ```KonsumerRTO``` object, pass the RTO Service ID credential (Version 2 Authentication), and service name information to the ```KonsumerRTO``` object for further EMA-RTO workflow.
 
 ``` Java
@@ -179,17 +181,180 @@ class KonsumerRTO {
 
 The code use the [dotenv-kotlin](https://github.com/cdimascio/dotenv-kotlin) library to load the RTO credentials and configuration from the environment variable ```.env``` file or the System Environment Variables. To use the dotenv-kotlin library, you just import the ```import io.github.cdimascio.dotenv.dotenv``` package and create the ```dotenv``` object via the ```val dotenv = dotenv {}``` wtih ```ignoreIfMalformed = true``` and ```ignoreIfMissing = true``` properties to populate configurations. After that you can access both system environment variables and ```.env```'s configurations from the ```dotenv.get("...");``` 
 
-Please note that the OS/system's environment variables always override ```.env``` configurations by default as the following example.statement. 
+Please note that the OS/system's environment variables always override ```.env``` configurations by default. 
 
-The next step is creating the OmmConsumer object as follows.
+### 2. Setting RDP Version 2 Authentication credentials to the OmmConsumer Class
+
+The next step is creating the ```OmmConsumer``` object. Then set the V2 auth Client Credentials (client ID and client secret) to the ```OmmConsumer``` instance via the *OmmConsumerConfig* class. 
 
 ``` Java
 class KonsumerRTO {
 
+    private val tokenUrlV2 = "https://api.refinitiv.com/auth/oauth2/v2/token"
+    private val itemName = "EUR="
+
     fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+
         var consumer: OmmConsumer? = null
 
+        try {
+            val appClient = AppClient()
+            val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
+
+            consumer = EmaFactory.createOmmConsumer(
+                config.consumerName("Consumer_4")
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
+                    .tokenServiceUrlV2(tokenUrlV2)
+            )
+
+        } catch (excp: InterruptedException) {
+            println(excp.message)
+        } catch (ex: OmmException) {
+            println(ex.message)
+        } finally {
+            consumer?.uninitialize();
+        }
     }
+}
+```
+The "Consumer_4" is defined to connect to RTO in the EmaConfig.xml file as follows
+
+```xml
+<Channel>
+	<Name value="Channel_4"/>
+	<ChannelType value="ChannelType::RSSL_ENCRYPTED"/>
+	<CompressionType value="CompressionType::None"/>
+	<GuaranteedOutputBuffers value="5000"/>
+	<!-- EMA discovers a host and a port from RDP service discovery for the specified location
+		 when both of them are not set and the session management is enable. -->
+	<Location value="ap-southeast"/>
+	<EnableSessionManagement value="1"/>
+	<ObjectName value=""/>
+</Channel>
+```
+
+### 2.  Setting a client secret in the ReactorOAuthCredentialRenewal
+
+By default, the EMA API will store all credential information. To use secure credential storage, a callback function can be specified by the user. If an ```OmmOAuth2ConsumerClient``` instance is specified when creating the OmmConsumer object, the EMA API does not store the password or clientSecret. In this case, the application must supply the password or clientSecret whenever the OAuth credential event ```OmmOAuth2ConsumerClient.onCredentialRenewal``` callback method is invoked. This call back must call set the credentials to the ```OAuth2CredentialRenewal``` instance and set it to the ```OmmConsumer.renewOAuthCredentials``` method to provide the updated credentials.
+
+```Java
+
+/* This is for example purposes, For best security, please use a proper credential store. */
+data class CredentialStore(var clientSecret: String, var clientId: String, var consumer: OmmConsumer?)
+
+/* Implementation of OmmOAuth2ConsumerClient.  This is a very basic callback that uses the closure to obtain
+ * the OmmConsumer and call submitOAuthCredentialRenewal.
+ * 
+ * This is intended to show functionality, so this example does not implement or use secure credential storage.
+ */
+class OAuthcallback : OmmOAuth2ConsumerClient {
+    override fun onOAuth2CredentialRenewal(event: OmmConsumerEvent?) {
+        val credentials: CredentialStore? = event?.closure() as CredentialStore?
+        val renewal = EmaFactory.createOAuth2CredentialRenewal() as OAuth2CredentialRenewal
+
+        renewal.clientId(credentials?.clientId)
+        renewal.clientSecret(credentials?.clientSecret)
+
+        println("Submitting credentials due to token renewal")
+
+        credentials?.consumer?.renewOAuthCredentials(renewal)
+
+    }
+}
+
+```
+
+The main purpose of the ```CredentialStore``` class is for holding the credentials only, so I am using the Kotlin [Data Class](https://kotlinlang.org/docs/data-classes.html) feature to shorten this POJO class implementation.
+
+Then add the ```oAuthCallback``` and ```credentials``` objects to the ```OmmConsumer.createOmmConsumer(OmmConsumerConfig config,OmmOAuth2ConsumerClient OAuthClient,java.lang.Object closure)``` method as follows.
+
+```Java
+fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+
+    var consumer: OmmConsumer? = null
+    val oAuthCallback = OAuthcallback()
+    val credentials = CredentialStore(clientId, clientSecret, consumer)
+
+    try {
+        val appClient = AppClient()
+        val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
+
+        consumer = EmaFactory.createOmmConsumer(
+            config.consumerName("Consumer_4")
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .tokenServiceUrlV2(tokenUrlV2), oAuthCallback, credentials as Any
+        )
+        credentials.consumer = consumer
+    }
+    ...
+}
+
+```
+
+### 3.  Registering Login Stream
+
+When connecting to RTO, it would be nice to monitors the state of connectivity. The application can open a login stream to receive the stream's status and information.
+
+```Java
+
+fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+
+    var consumer: OmmConsumer? = null
+    val oAuthCallback = OAuthcallback()
+    val credentials = CredentialStore(clientId, clientSecret, consumer)
+
+    try {
+        val appClient = AppClient()
+        val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
+
+        consumer = EmaFactory.createOmmConsumer(
+            config.consumerName("Consumer_4")
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .tokenServiceUrlV2(tokenUrlV2), oAuthCallback, credentials as Any
+        )
+        credentials.consumer = consumer
+
+        val loginReq = EmaFactory.Domain.createLoginReq()
+        consumer.registerClient(loginReq.message(), appClient)
+    }
+    ...
+}
+```
+
+### 4.  Requesting Data
+
+```Java
+fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+    ...
+    try {
+        val appClient = AppClient()
+        val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
+        ...
+
+        // --------------------------------- View  ---------------------------
+        val view = EmaFactory.createElementList()
+        val arrayView = EmaFactory.createOmmArray()
+
+        arrayView.fixedWidth(2)
+        arrayView.add(EmaFactory.createOmmArrayEntry().intValue(22)) //BID
+        arrayView.add(EmaFactory.createOmmArrayEntry().intValue(25)) //ASK
+        arrayView.add(EmaFactory.createOmmArrayEntry().intValue(15)) //CURRENCY
+        arrayView.add(EmaFactory.createOmmArrayEntry().intValue(875)) //VALUE_DT1
+        arrayView.add(EmaFactory.createOmmArrayEntry().intValue(1010)) //VALUE_TS1
+
+        view.add(EmaFactory.createElementEntry().uintValue(EmaRdm.ENAME_VIEW_TYPE, 1))
+        view.add(EmaFactory.createElementEntry().array(EmaRdm.ENAME_VIEW_DATA, arrayView))
+
+        consumer.registerClient(
+            EmaFactory.createReqMsg().serviceName(serviceName).payload(view).name(itemName),
+            appClient
+        )
+        Thread.sleep(900000)
+    }
+    ...
 }
 ```
 
