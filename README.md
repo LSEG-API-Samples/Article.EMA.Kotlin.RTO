@@ -326,9 +326,13 @@ fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_
 
 ### 4.  Requesting Data
 
+Now we come to the item subscription process. I am using the View feature to subscribe only interested FIDs. 
+
 ```Java
 fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
     ...
+    private val itemName = "EUR="
+
     try {
         val appClient = AppClient()
         val config: OmmConsumerConfig = EmaFactory.createOmmConsumerConfig()
@@ -357,6 +361,58 @@ fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_
     ...
 }
 ```
+
+That completes the ```OmmConsumer``` main part, let's move on the the ```OmmConsumerClient``` part that handles the login and item streams incoming messages.
+
+### Create the Client application class
+
+That brings us to client application ```AppClient``` class which implements the ```OmmConsumerClient``` interface.
+
+### 5.  Defining the mandatory callbacks
+
+The ```OmmConsumerClient``` interface needs to contains the mandatory callback functions to capture the different events generated when the application registers interest in an item as follows.
+
+```Java
+class AppClient : OmmConsumerClient {
+    override fun onRefreshMsg(refreshMsg: RefreshMsg, event: OmmConsumerEvent) {
+        println("Received Refresh. Item Handle: ${event.handle()} Closure: ${event.closure()}")
+        println("Item Name: ${if (refreshMsg.hasName()) refreshMsg.name() else "<not set>"}")
+        println("Service Name: ${if (refreshMsg.hasServiceName()) refreshMsg.serviceName() else "<not set>"}")
+        println("Item State: ${refreshMsg.state()}")
+
+        println(refreshMsg)
+    }
+
+    override fun onUpdateMsg(updateMsg: UpdateMsg, event: OmmConsumerEvent) {
+        println("Received Update. Item Handle: ${event.handle()} Closure: ${event.closure()}")
+        println("Item Name: ${if (updateMsg.hasName()) updateMsg.name() else "<not set>"}")
+        println("Service Name: ${if (updateMsg.hasServiceName()) updateMsg.serviceName() else "<not set>"}")
+
+        println(updateMsg)
+    }
+
+    override fun onStatusMsg(statusMsg: StatusMsg, event: OmmConsumerEvent) {
+        println("Received Status. Item Handle: ${event.handle()} Closure: ${event.closure()}")
+        println("Item Name: ${if (statusMsg.hasName()) statusMsg.name() else "<not set>"}")
+        println("Service Name: ${if (statusMsg.hasServiceName()) statusMsg.serviceName() else "<not set>"}")
+
+        println(statusMsg)
+
+    }
+
+    override fun onAckMsg(ackMsg: AckMsg, event: OmmConsumerEvent) {}
+
+    override fun onAllMsg(allMsg: Msg, event: OmmConsumerEvent) {}
+
+    override fun onGenericMsg(genericMsg: GenericMsg, event: OmmConsumerEvent) {} 
+}
+```
+
+Now the ```AppClient``` class can receive and print incoming data from the API.
+
+### 6.  Field List Walk
+
+The code above just prints incoming messages "as is".
 
 TBD
 
