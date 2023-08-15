@@ -117,7 +117,7 @@ class AppClient : OmmConsumerClient {
         println("Service Name: ${if (refreshMsg.hasServiceName()) refreshMsg.serviceName() else "<not set>"}")
         println("Item State: ${refreshMsg.state()}")
 
-        if (refreshMsg.dataType() == EmaRdm.MMT_LOGIN) {
+        if (refreshMsg.domainType() == EmaRdm.MMT_LOGIN) {
             _loginRefresh.clear()
             println(_loginRefresh.message(refreshMsg).toString())
         } else {

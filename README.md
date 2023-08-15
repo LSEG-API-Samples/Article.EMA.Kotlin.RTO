@@ -41,7 +41,7 @@ fun sum(a: Int, b: Int): Int {
 }
 ```
 
-That’s all I have to say about Kotlin introduction
+That’s all I have to say about Kotlin introduction.
 
 ## <a id="prerequisite"></a>Prerequisite
 
@@ -179,9 +179,7 @@ class KonsumerRTO {
 }
 ```
 
-The code use the [dotenv-kotlin](https://github.com/cdimascio/dotenv-kotlin) library to load the RTO credentials and configuration from the environment variable ```.env``` file or the System Environment Variables. To use the dotenv-kotlin library, you just import the ```import io.github.cdimascio.dotenv.dotenv``` package and create the ```dotenv``` object via the ```val dotenv = dotenv {}``` wtih ```ignoreIfMalformed = true``` and ```ignoreIfMissing = true``` properties to populate configurations. After that you can access both system environment variables and ```.env```'s configurations from the ```dotenv.get("...");``` 
-
-Please note that the OS/system's environment variables always override ```.env``` configurations by default. 
+The code use the [dotenv-kotlin](https://github.com/cdimascio/dotenv-kotlin) library to load the RTO credentials and configuration from the environment variable ```.env``` file or the System Environment Variables. The OS/system's environment variables always override ```.env``` configurations by default. 
 
 ### 2. Setting RDP Version 2 Authentication credentials to the OmmConsumer Class
 
@@ -410,9 +408,158 @@ class AppClient : OmmConsumerClient {
 
 Now the ```AppClient``` class can receive and print incoming data from the API.
 
-### 6.  Field List Walk
+### 6.  Handling Login Stream
 
-The code above just prints incoming messages "as is".
+Since the ```KonsumerRTO``` class has registered the Login stream, the Login stream event messages will come to the ```AppClient``` as well. To handle the Login stream message, you can check the incoming message domain type in the ```onRefreshMsg``` and ```onStatusMsg``` callback methods to parse the Login stream message accordingly
+
+```Java
+class AppClient : OmmConsumerClient {
+
+    private val _loginRefresh: LoginRefresh = EmaFactory.Domain.createLoginRefresh()
+    private val _loginStatus: LoginStatus = EmaFactory.Domain.createLoginStatus()
+
+    override fun onRefreshMsg(refreshMsg: RefreshMsg, event: OmmConsumerEvent) {
+        ...
+        if (refreshMsg.dataType() == EmaRdm.MMT_LOGIN) {
+            _loginRefresh.clear()
+            println(_loginRefresh.message(refreshMsg).toString())
+        } else {
+            println(refreshMsg)
+        }
+        println()
+    }
+
+    override fun onStatusMsg(statusMsg: StatusMsg, event: OmmConsumerEvent) {
+        ...
+        if (statusMsg.domainType() == EmaRdm.MMT_LOGIN) {
+            _loginStatus.clear()
+            println(_loginStatus.message(statusMsg).toString())
+        }
+        println()
+
+    }
+}
+```
+
+Example messages:
+```
+Received Refresh. Item Handle: 1 Closure: null
+Item Name: xXXXXXXXXXXXXXXX
+Service Name: <not set>
+Item State: Open / Ok / None / 'Login accepted by host ads-fanout-sm-az1-apse1-prd.'
+
+AllowSuspectData : true
+ApplicationId : 256
+ApplicationName : RTO
+Position : 192.168.XX.XXX/WIN-XXXXXX
+ProvidePermissionExpressions : true
+ProvidePermissionProfile : false
+SingleOpen : true
+SupportBatchRequests : 7
+SupportOMMPost : true
+SupportOptimizedPauseResume : false
+SupportViewRequests : true
+SupportStandby : true
+SupportEnhancedSymbolList : 1
+AuthenticationErrorCode : 0
+Solicited : true
+UserName : xXXXXXXXXXXXXXXX
+UserNameType : 1
+State : StreamState: 1 DataState: 1 StatusCode: 0StatusText: Login accepted by host ads-fanout-sm-az1-apse1-prd.
+```
+Now you can monitor the connectivity health from the Login stream messages.
+
+### 7.  Handling incoming message Field-By-Field
+
+The code above just prints incoming messages "as is" which is not be useful. I am implementing the ```decode``` method to iterate incoming data's  ```FieldList``` object and handle data field by field. Please be noticed that the ```decode``` method handles only a few data types because the ```KonsumerRTO``` uses the View feature to request only interested FIDs, so the method can check only subscription FIDs data types.
+
+
+```Java
+class AppClient : OmmConsumerClient {
+
+    private val _loginRefresh: LoginRefresh = EmaFactory.Domain.createLoginRefresh()
+    private val _loginStatus: LoginStatus = EmaFactory.Domain.createLoginStatus()
+
+    override fun onRefreshMsg(refreshMsg: RefreshMsg, event: OmmConsumerEvent) {
+        ....
+        if (refreshMsg.domainType() == EmaRdm.MMT_LOGIN) {
+            _loginRefresh.clear()
+            println(_loginRefresh.message(refreshMsg).toString())
+        } else {
+            decode(refreshMsg)
+        }
+        println()
+    }
+
+    override fun onUpdateMsg(updateMsg: UpdateMsg, event: OmmConsumerEvent) {
+        ....
+        decode(updateMsg)
+
+        println()
+    }
+
+    private fun decode(msg: Msg) {
+
+        if (msg.attrib().dataType() == DataType.DataTypes.FIELD_LIST) decode(msg.attrib().fieldList())
+
+        if (msg.payload().dataType() == DataType.DataTypes.FIELD_LIST) decode(msg.payload().fieldList())
+    }
+
+
+    private fun decode(fieldList: FieldList) {
+        for (fieldEntry: FieldEntry in fieldList) {
+            print(
+                "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
+                    DataType.asString(
+                        fieldEntry.load().dataType()
+                    )
+                } Value: "
+            )
+            if (Data.DataCode.BLANK == fieldEntry.code()) {
+                println(" blank")
+            } else {
+                when (fieldEntry.loadType()) {
+                    DataType.DataTypes.REAL -> println(fieldEntry.real().asDouble())
+                    DataType.DataTypes.TIME -> println(
+                        "${fieldEntry.time().hour()} : ${fieldEntry.time().minute()} : ${
+                            fieldEntry.time().second()
+                        } : ${fieldEntry.time().millisecond()}"
+                    )
+                    DataType.DataTypes.DATE -> println(
+                        "${fieldEntry.date().day()} / ${fieldEntry.date().month()} / ${fieldEntry.date().year()}"
+                    )
+                    DataType.DataTypes.ENUM -> println(if (fieldEntry.hasEnumDisplay()) fieldEntry.enumDisplay() else fieldEntry.enumValue())
+                    DataType.DataTypes.ERROR -> println(
+                        "${fieldEntry.error().errorCode()} (${fieldEntry.error().errorCodeAsString()})"
+                    )
+                    else -> println()
+                }
+            }
+        }
+    }
+}
+```
+Example Messages:
+
+```
+Received Refresh. Item Handle: 2 Closure: null
+Item Name: EUR=
+Service Name: ELEKTRON_DD
+Item State: Open / Ok / None / ''
+Fid 15 Name = CURRENCY DataType: Enum Value: USD
+Fid 22 Name = BID DataType: Real Value: 1.0942
+Fid 25 Name = ASK DataType: Real Value: 1.0943
+Fid 875 Name = VALUE_DT1 DataType: Date Value: 15 / 8 / 2023
+Fid 1010 Name = VALUE_TS1 DataType: Time Value: 9 : 50 : 6 : 0
+
+Received Update. Item Handle: 2 Closure: null
+Item Name: EUR=
+Service Name: ELEKTRON_DD
+Fid 22 Name = BID DataType: Real Value: 1.094
+Fid 25 Name = ASK DataType: Real Value: 1.0944
+Fid 875 Name = VALUE_DT1 DataType: Date Value: 15 / 8 / 2023
+Fid 1010 Name = VALUE_TS1 DataType: Time Value: 9 : 50 : 8 : 0
+```
 
 TBD
 
