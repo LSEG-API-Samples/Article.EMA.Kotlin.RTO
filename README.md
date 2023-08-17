@@ -231,6 +231,7 @@ The "Consumer_4" is defined to connect to RTO in the EmaConfig.xml file as follo
 	<ObjectName value=""/>
 </Channel>
 ```
+Please refer to the [Refinitiv Real-Time - Optimized Install and Config Guide](https://developers.refinitiv.com/en/api-catalog/refinitiv-real-time-opnsrc/refinitiv-websocket-api/documentation) document to find more detail about RTO endpoints locations. 
 
 ### 2.  Setting a client secret in the ReactorOAuthCredentialRenewal
 
@@ -561,38 +562,59 @@ Fid 875 Name = VALUE_DT1 DataType: Date Value: 15 / 8 / 2023
 Fid 1010 Name = VALUE_TS1 DataType: Time Value: 9 : 50 : 8 : 0
 ```
 
-TBD
+That covers the RTO-Kotlin code explanation.
 
 ## <a id ="how_to_run"></a>How to run the demo application
 
-### Maven
+My next point is how to run the demo application. The first step is to unzip or download the example project folder into a directory of your choice, then choose Maven or Docker environments based on your preference.
 
-``` bash
-mvn clean
 
-mvn package
+### <a id="docker_example_run"></a>Docker Running Example 
 
-java -cp .;target/RTO_Kotlin-1.0-jar-with-dependencies.jar com.refinitiv.kotlin.KonsumerRTOKt
-```
+1. Go to the project's folder and create a file name ```.env```  with the following content.
+    ``` ini
+    #Authentication V2
+    CLIENT_ID=<Client ID V2>
+    CLIENT_SECRET=<Client Secret V2>
+    SERVICENAME=<ELEKTRON_DD or ERT_FD3_LF1>
+   ```
+2. Open the command prompt and go to the project's folder.
+3. Run the following command to build a Docker image
+    ``` bash
+    docker build . -t kotlin_rto
+    ```
+4. Once the building process is success, run the following command to run a Docker container
+    ``` bash
+    docker run -it --name kotlin_rto --env-file .env kotlin_rto
+    ```
+5. To stop and delete a Docker container, press ``` Ctrl+C``` (or run ```docker stop kotlin_rto```) then run the following command:
+    ``` bash
+    $> docker rm kotlin_rto
+    ```
+6. To delete a Docker image, run the ```docker rmi kotlin_rto``` after a container is removed.
 
-### Docker
+### <a id="maven_example_run"></a>Running Example with Maven
 
-Create a file name ```.env``` with the following content
-
-``` ini
-#Authentication V2
-CLIENT_ID=<Client ID V2>
-CLIENT_SECRET=<Client Secret V2>
-SERVICENAME=<ELEKTRON_DD or ERT_FD3_LF1>
-```
-
-and then run
-
-``` bash
-docker build . -t kotlin_rto
-
-docker run -it --name kotlin_rto --env-file .env kotlin_rto
-```
+1. Go to the project's folder and create a file name ```.env```  with the following content.
+    ``` ini
+    #Authentication V2
+    CLIENT_ID=<Client ID V2>
+    CLIENT_SECRET=<Client Secret V2>
+    SERVICENAME=<ELEKTRON_DD or ERT_FD3_LF1>
+    ```
+2. Open the command prompt and go to the project's folder.
+2. Run the following command in the command prompt application to build the project.
+    ``` bash
+    mvn package
+    ```
+3. Once the building process is success, run the following Java command to run the ```KonsumerRTOKt``` class
+    ``` bash
+    java -cp .;target/RTO_Kotlin-1.0-jar-with-dependencies.jar com.refinitiv.kotlin.KonsumerRTOKt
+    ```
+4. You can clean up the project build with the following command
+    ``` bash
+    mvn clean
+    ```
 
 ## <a id="ref"></a>References
 
