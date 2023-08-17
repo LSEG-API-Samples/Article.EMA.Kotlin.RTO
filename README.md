@@ -568,7 +568,6 @@ That covers the RTO-Kotlin code explanation.
 
 My next point is how to run the demo application. The first step is to unzip or download the example project folder into a directory of your choice, then choose Maven or Docker environments based on your preference.
 
-
 ### <a id="docker_example_run"></a>Docker Running Example 
 
 1. Go to the project's folder and create a file name ```.env```  with the following content.
@@ -616,6 +615,18 @@ My next point is how to run the demo application. The first step is to unzip or 
     mvn clean
     ```
 
+That covers how to run an example.
+
+## Conclusion
+
+Kotlin is now a rising star cross-platform, general-purpose programming language. The language has been used by both mobile, front-end, and the back-end developers. Kotlin lets developers implements a shorter and easier-to-read source code while maintaining full compatibility with Java. 
+
+The Java language is trying to simplify itself via the [JEP 445 Unnamed Classes and Instance Main Methods](https://openjdk.org/jeps/445) specification which is currently available as a *preview feature* of Java version 21. However, it takes time until Java developers can migrate their supported JVM to Java 21. But with Kotlin, developers can build applications with concise, simply, and expressive, code with fully supports the current JVM versions without waiting for Java 21.
+
+This language simplicity helps developers implements the Real-Time application using EMA in a simple way that simpler than implement on the native-Java.
+
+That’s all I have to say about Kotlin and RTO.
+
 ## <a id="ref"></a>References
 
 For further details, please check out the following resources:
@@ -632,6 +643,7 @@ For further details, please check out the following resources:
 * [Kotlin Build tools: Maven](https://kotlinlang.org/docs/maven.html#specifying-compiler-options)
 * [IntelliJ IDEA: Get started with Kotlin](https://www.jetbrains.com/help/idea/get-started-with-kotlin.html)
 * [How to Implement EMA Java Application with Kotlin Language](https://developers.refinitiv.com/en/article-catalog/article/how-to-implement-ema-java-application-with-kotlin-language) article
+* [Kotlin Brand Assets](https://kotlinlang.org/docs/kotlin-brand-assets.html)
 
 
 For any question related to this article or the RTSDK page, please use the Developer Community [Q&A Forum](https://community.developers.refinitiv.com/).
