@@ -14,6 +14,7 @@ ALL EXAMPLE CODE IS PROVIDED ON AN “AS IS” AND “AS AVAILABLE” BASIS FOR 
 
 The [How to Implement EMA Java Application with Kotlin Language](https://developers.refinitiv.com/en/article-catalog/article/how-to-implement-ema-java-application-with-kotlin-language) article shows how to implement Enterprise Message API (EMA) Java Consumer and Interactive Provider applications using Kotlin. This article shows a step-by-step guide to build the EMA Java Consumer application to connect and consume real-time streaming data from the Cloud (Refinitiv Real-Time Optimized, aka RTO).
 
+![figure-1](images/01_kotlin_refinitiv_diagram.png "EMA Java and Kotlin with Refinitiv Real-Time diagram")
 
 Note: 
 - This example project uses Kotlin version 1.9.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)
@@ -71,9 +72,9 @@ Please contact your Refinitiv representative to help you with the RTO account an
 
 This demonstration connects to RTO on AWS via a public internet.
 
-## Implementation Detail 
+## <a id="code_walkthrough"></a>Application Code Walkthrough
 
-### Maven pom.xml file
+### <a id="maven_setting"></a>Maven pom.xml file
 
 Let’s start with the Maven ```pom.xml``` file setting for Kotin. The ```pom.xml``` file the main Maven's project configuration. To use Kotlin with Maven, you need the **kotlin-maven-plugin** to compile Kotlin sources and modules. The first step is defining the version of Kotlin via the ```<properties>``` tag as follows:
 
@@ -143,11 +144,11 @@ You can see a full pom.xml file configurations in the project repository.
 
 To learn more about Kotlin and Maven configurations, please see [Kotlin: Maven build tool](https://kotlinlang.org/docs/maven.html#enable-incremental-compilation) page.
 
-## Consumer Application Code Walkthrough
+Let’s leave the pom.xml file setting for the Kotlin project development there.
 
-The demo application (*KonsumerRTO.kt*) is based on the EMA Java ex451_MP_OAuth2Callback_V2, ex333_Login_Streaming_DomainRep, series300.ex360_MP_View and ex113_MP_SessionMgmt examples source code to connect and consume real-time streaming from RTO with the View feature.  
+### <a id="consumer_code"></a>Consumer Creation and Configuration
 
-### Consumer Creation and Configuration
+Now we come to the consumer code walkthrough. The demo application (*KonsumerRTO.kt*) is based on the EMA Java ex451_MP_OAuth2Callback_V2, ex333_Login_Streaming_DomainRep, series300.ex360_MP_View and ex113_MP_SessionMgmt examples source code to connect and consume real-time streaming from RTO with the View feature.  
 
 The **KonsumerRTO.kt** file implements the standard EMA Java Consumer applications with Kotlin syntax mindset. 
 
@@ -181,7 +182,9 @@ class KonsumerRTO {
 
 The code use the [dotenv-kotlin](https://github.com/cdimascio/dotenv-kotlin) library to load the RTO credentials and configuration from the environment variable ```.env``` file or the System Environment Variables. The OS/system's environment variables always override ```.env``` configurations by default. 
 
-### 2. Setting RDP Version 2 Authentication credentials to the OmmConsumer Class
+That’s all I have to say about the consumer application entry point.
+
+#### 2. Setting RDP Version 2 Authentication credentials to the OmmConsumer Class
 
 The next step is creating the ```OmmConsumer``` object. Then set the V2 auth Client Credentials (client ID and client secret) to the ```OmmConsumer``` instance via the *OmmConsumerConfig* class. 
 
@@ -233,7 +236,7 @@ The "Consumer_4" is defined to connect to RTO in the EmaConfig.xml file as follo
 ```
 Please refer to the [Refinitiv Real-Time - Optimized Install and Config Guide](https://developers.refinitiv.com/en/api-catalog/refinitiv-real-time-opnsrc/refinitiv-websocket-api/documentation) document to find more detail about RTO endpoints locations. 
 
-### 2.  Setting a client secret in the ReactorOAuthCredentialRenewal
+#### 3. Setting a client secret in the ReactorOAuthCredentialRenewal
 
 By default, the EMA API will store all credential information. To use secure credential storage, a callback function can be specified by the user. If an ```OmmOAuth2ConsumerClient``` instance is specified when creating the OmmConsumer object, the EMA API does not store the password or clientSecret. In this case, the application must supply the password or clientSecret whenever the OAuth credential event ```OmmOAuth2ConsumerClient.onCredentialRenewal``` callback method is invoked. This call back must call set the credentials to the ```OAuth2CredentialRenewal``` instance and set it to the ```OmmConsumer.renewOAuthCredentials``` method to provide the updated credentials.
 
@@ -292,9 +295,11 @@ fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_
 
 ```
 
-### 3.  Registering Login Stream
+That covers how to initialize connection with RTO using the Version 2 Authentication.
 
-When connecting to RTO, it would be nice to monitors the state of connectivity. The application can open a login stream to receive the stream's status and information.
+#### 4. Registering Login Stream
+
+My next point is how to monitors the state of connectivity when connecting to the RTO. The application can open a login stream to receive the stream's status and information.
 
 ```Java
 
@@ -323,7 +328,9 @@ fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_
 }
 ```
 
-### 4.  Requesting Data
+Note: If you are connecting to the RTDS (either on-prem or hosted solution), registering a a login stream to receive the stream's status and information can be helpful for monitoring a connection.
+
+#### 5. Requesting Data
 
 Now we come to the item subscription process. I am using the View feature to subscribe only interested FIDs. 
 
@@ -363,11 +370,11 @@ fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_
 
 That completes the ```OmmConsumer``` main part, let's move on the the ```OmmConsumerClient``` part that handles the login and item streams incoming messages.
 
-### Create the Client application class
+### <a id="client_app_code"></a>Create the Client application class
 
 That brings us to client application ```AppClient``` class which implements the ```OmmConsumerClient``` interface.
 
-### 5.  Defining the mandatory callbacks
+#### 6. Defining the mandatory callbacks
 
 The ```OmmConsumerClient``` interface needs to contains the mandatory callback functions to capture the different events generated when the application registers interest in an item as follows.
 
@@ -409,7 +416,7 @@ class AppClient : OmmConsumerClient {
 
 Now the ```AppClient``` class can receive and print incoming data from the API.
 
-### 6.  Handling Login Stream
+#### 7. Handling Login Stream Messages
 
 Since the ```KonsumerRTO``` class has registered the Login stream, the Login stream event messages will come to the ```AppClient``` as well. To handle the Login stream message, you can check the incoming message domain type in the ```onRefreshMsg``` and ```onStatusMsg``` callback methods to parse the Login stream message accordingly
 
@@ -470,9 +477,9 @@ State : StreamState: 1 DataState: 1 StatusCode: 0StatusText: Login accepted by h
 ```
 Now you can monitor the connectivity health from the Login stream messages.
 
-### 7.  Handling incoming message Field-By-Field
+#### 8. Handling incoming messages Field-By-Field
 
-The code above just prints incoming messages "as is" which is not be useful. I am implementing the ```decode``` method to iterate incoming data's  ```FieldList``` object and handle data field by field. Please be noticed that the ```decode``` method handles only a few data types because the ```KonsumerRTO``` uses the View feature to request only interested FIDs, so the method can check only subscription FIDs data types.
+Now, what about the market price message handling. The code above just prints incoming messages "as is" which is not be useful. I am implementing the ```decode``` method to iterate incoming data's  ```FieldList``` object and handle data field by field. Please be noticed that the ```decode``` method handles only a few data types because the ```KonsumerRTO``` uses the View feature to request only interested FIDs, so the method can check only subscription FIDs data types.
 
 
 ```Java
@@ -562,7 +569,7 @@ Fid 875 Name = VALUE_DT1 DataType: Date Value: 15 / 8 / 2023
 Fid 1010 Name = VALUE_TS1 DataType: Time Value: 9 : 50 : 8 : 0
 ```
 
-That covers the RTO-Kotlin code explanation.
+That covers the OmmConsumer Client application source code with Kotlin explanation.
 
 ## <a id ="how_to_run"></a>How to run the demo application
 
@@ -592,6 +599,8 @@ My next point is how to run the demo application. The first step is to unzip or 
     ```
 6. To delete a Docker image, run the ```docker rmi kotlin_rto``` after a container is removed.
 
+![figure-2](images/02_kotlin_rto_run.gif "Running RTO Kotlin example with Docker")
+
 ### <a id="maven_example_run"></a>Running Example with Maven
 
 1. Go to the project's folder and create a file name ```.env```  with the following content.
@@ -617,13 +626,15 @@ My next point is how to run the demo application. The first step is to unzip or 
 
 That covers how to run an example.
 
-## Conclusion
+## <a id="conclusion"></a>Conclusion
 
-Kotlin is now a rising star cross-platform, general-purpose programming language. The language has been used by both mobile, front-end, and the back-end developers. Kotlin lets developers implements a shorter and easier-to-read source code while maintaining full compatibility with Java. 
+Before I finish, let me just say Kotlin is now a rising star cross-platform, general-purpose programming language. The language has been used by both mobile, front-end, and the back-end developers. Kotlin lets developers implements a shorter and easier-to-read source code while maintaining full compatibility with Java. 
 
-The Java language is trying to simplify itself via the [JEP 445 Unnamed Classes and Instance Main Methods](https://openjdk.org/jeps/445) specification which is currently available as a *preview feature* of Java version 21. However, it takes time until Java developers can migrate their supported JVM to Java 21. But with Kotlin, developers can build applications with concise, simply, and expressive, code with fully supports the current JVM versions without waiting for Java 21.
+The Java language is trying to simplify itself via the [JEP 445 Unnamed Classes and Instance Main Methods](https://openjdk.org/jeps/445) specification which is currently available as a *preview feature* of Java version 21. However, it takes time until Java developers can migrate their supported JVM to Java 21. But with Kotlin, developers can build applications with concise, simply, and expressive, code with fully supports the current JVM versions without waiting for Java 21. 
 
 This language simplicity helps developers implements the Real-Time application using EMA in a simple way that simpler than implement on the native-Java.
+
+![Alt text](images/03_kodee.png "Kodee, the Kotlin mascot")
 
 That’s all I have to say about Kotlin and RTO.
 
