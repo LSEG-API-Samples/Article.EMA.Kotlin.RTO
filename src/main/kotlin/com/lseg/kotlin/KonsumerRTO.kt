@@ -80,6 +80,7 @@ fun main(args: Array<String>) {
     val serviceName = "ELEKTRON_DD"
     var itemName = "EUR="
 
+    //Receiving -itemName from a command line parameter
     val argsMap = args.toList().chunked(2).associate { it[0] to it[1] }
     if (argsMap.isNotEmpty()) {
         if (argsMap["-itemName"]?.isNotEmpty() == true) {
@@ -175,7 +176,7 @@ class AppClient : OmmConsumerClient {
 
 
     private fun decode(fieldList: FieldList) {
-        for (fieldEntry: FieldEntry in fieldList) {
+        fieldList.forEach{ fieldEntry ->
             print(
                 "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
                     DataType.asString(

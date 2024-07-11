@@ -7,9 +7,7 @@ COPY src ./src
 RUN mvn clean -e -B package
 
 #FROM openjdk:11-jre-slim-bullseye
-#FROM openjdk:17.0.2-slim-bullseye
 FROM --platform=linux/amd64 eclipse-temurin:11-jre-alpine
-#FROM --platform=linux/amd64 amazoncorretto:11-alpine3.19
 WORKDIR /app
 COPY --from=builder /app/target/RTO_Kotlin-1.0-jar-with-dependencies.jar .
 COPY EmaConfig.xml .
