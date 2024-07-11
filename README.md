@@ -81,7 +81,7 @@ Let’s start with the Maven ```pom.xml``` file setting for Kotin. The ```pom.xm
 ```xml
 <properties>
     <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
-    <rtsdk.version>3.7.1.0</rtsdk.version>
+    <rtsdk.version>3.8.0.0</rtsdk.version>
     <kotlin.version>1.9.0</kotlin.version>
     <main.class>com.refinitiv.kotlin.KonsumerRTOKt</main.class>
     ...

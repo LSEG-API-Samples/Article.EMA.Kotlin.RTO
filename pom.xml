@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>RTO_Kotlin</artifactId>
-    <groupId>com.refinitiv</groupId>
+    <groupId>com.lseg</groupId>
     <version>1.0</version>
     <packaging>jar</packaging>
 
@@ -15,14 +15,28 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
-        <rtsdk.version>3.7.1.0</rtsdk.version>
-        <main.class>com.refinitiv.kotlin.KonsumerRTOKt</main.class>
+        <rtsdk.version>3.8.0.0</rtsdk.version>
+        <main.class>com.lseg.kotlin.KonsumerRTOKt</main.class>
     </properties>
 
+
     <repositories>
-        <repository>
+        <!--<repository>
             <id>mavenCentral</id>
             <url>https://repo1.maven.org/maven2/</url>
+        </repository>-->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <!--<layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>-->
         </repository>
     </repositories>
 

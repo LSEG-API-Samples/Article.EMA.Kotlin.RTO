@@ -5,7 +5,7 @@
 // *|           Copyright (C) 2020-2023 Refinitiv. All rights reserved.                                --
 ///*|----------------------------------------------------------------------------------------------------
 
-package com.refinitiv.kotlin
+package com.lseg.kotlin
 
 import com.refinitiv.ema.access.*
 import com.refinitiv.ema.domain.login.Login.LoginRefresh

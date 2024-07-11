@@ -1,0 +1,7 @@
+name: console_rto
+
+services:
+  console-rto:
+    build: .
+    env_file: ".env"
+    command: -itemName /LSEG.L
