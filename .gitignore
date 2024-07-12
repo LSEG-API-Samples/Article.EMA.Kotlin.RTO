@@ -11,3 +11,4 @@ target/
 
 .env
 target/
+src/main/kotlin/com/lseg/kotlin/App.kt

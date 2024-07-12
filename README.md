@@ -1,6 +1,6 @@
 ## Implementing RTO Consumer Application with Kotlin
-- version: 1.0.0
-- Last Update: August 2023
+- version: 1.2.0
+- Last Update: July 2024
 - Environment: Docker or IntelliJ IDEA
 - Compiler: Kotlin
 - Prerequisite: [Demo prerequisite](#prerequisite)
@@ -17,7 +17,7 @@ The [How to Implement EMA Java Application with Kotlin Language](https://develop
 ![figure-1](images/01_kotlin_refinitiv_diagram.png "EMA Java and Kotlin with Refinitiv Real-Time diagram")
 
 Note: 
-- This example project uses Kotlin version 1.9.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)
+- This example project uses Kotlin version 1.9.0/2.0.0 and EMA Java 3.7.1.0 (RTSDK 2.1.1.L1)/3.8.0.0 (RTSDK 2.2.0.L1)
 - I am demonstrating with the Version 2 Authentication
 
 ## <a id="kotlin_overview"></a>Introduction to Kotlin
@@ -81,8 +81,8 @@ Let’s start with the Maven ```pom.xml``` file setting for Kotin. The ```pom.xm
 ```xml
 <properties>
     <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
-    <rtsdk.version>3.7.1.0</rtsdk.version>
-    <kotlin.version>1.9.0</kotlin.version>
+    <rtsdk.version>3.8.0.0</rtsdk.version>
+    <kotlin.version>2.0.0</kotlin.version>
     <main.class>com.refinitiv.kotlin.KonsumerRTOKt</main.class>
     ...
 </properties>
@@ -100,7 +100,7 @@ And then set add the Kotlin standard library in the pom.xml file dependency sett
     </dependency>
     <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-stdlib</artifactId>
+        <artifactId>kkotlin-stdlib-jdk8</artifactId>
         <version>{kotlin.version}</version>
     </dependency>
 </dependencies>
@@ -113,7 +113,6 @@ Next, set the pom.xml file's source directory and kotlin-maven-plugin plugins to
 ```xml
 <build>
     <sourceDirectory>src/main/kotlin</sourceDirectory>
-    <testSourceDirectory>src/test/kotlin</testSourceDirectory>
     <plugins>
         <plugin>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -166,15 +165,24 @@ fun main() {
     }
     val clientId: String = dotenv["CLIENT_ID"]
     val clientSecret: String = dotenv["CLIENT_SECRET"]
-    val serviceName: String = dotenv["SERVICENAME"]
+    val serviceName = "ELEKTRON_DD"
+    var itemName = "EUR="
+
+    //Receiving -itemName from a command line parameter
+    val argsMap = args.toList().chunked(2).associate { it[0] to it[1] }
+    if (argsMap.isNotEmpty()) {
+        if (argsMap["-itemName"]?.isNotEmpty() == true) {
+            itemName = argsMap["-itemName"].toString()
+        }
+    }
 
     val appRTO = KonsumerRTO()
-    appRTO.run(clientId, clientSecret, serviceName)
+    appRTO.run(clientId, clientSecret, serviceName, itemName)
 }
 
 class KonsumerRTO {
 
-    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD", itemName: String ="EUR=") {
         //Perform RTO connection logic
     }
 }
@@ -192,9 +200,8 @@ The next step is creating the ```OmmConsumer``` object. Then set the V2 auth Cli
 class KonsumerRTO {
 
     private val tokenUrlV2 = "https://api.refinitiv.com/auth/oauth2/v2/token"
-    private val itemName = "EUR="
 
-    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD", itemName: String ="EUR=") {
 
         var consumer: OmmConsumer? = null
 
@@ -272,7 +279,7 @@ The main purpose of the ```CredentialStore``` class is for holding the credentia
 Then add the ```oAuthCallback``` and ```credentials``` objects to the ```OmmConsumer.createOmmConsumer(OmmConsumerConfig config,OmmOAuth2ConsumerClient OAuthClient,java.lang.Object closure)``` method as follows.
 
 ```Java
-fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD", itemName: String ="EUR=") {
 
     var consumer: OmmConsumer? = null
     val oAuthCallback = OAuthcallback()
@@ -515,7 +522,7 @@ class AppClient : OmmConsumerClient {
 
 
     private fun decode(fieldList: FieldList) {
-        for (fieldEntry: FieldEntry in fieldList) {
+        fieldList.forEach{ fieldEntry ->
             print(
                 "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
                     DataType.asString(
@@ -582,7 +589,6 @@ My next point is how to run the demo application. The first step is to unzip or 
     #Authentication V2
     CLIENT_ID=<Client ID V2>
     CLIENT_SECRET=<Client Secret V2>
-    SERVICENAME=<ELEKTRON_DD or ERT_FD3_LF1>
    ```
 2. Open the command prompt and go to the project's folder.
 3. Run the following command to build a Docker image
@@ -598,6 +604,10 @@ My next point is how to run the demo application. The first step is to unzip or 
     $> docker rm kotlin_rto
     ```
 6. To delete a Docker image, run the ```docker rmi kotlin_rto``` after a container is removed.
+7. Alternatively, you can build and run the project with Docker via the following command
+    ```bash
+    $> docker compose up
+    ```
 
 ![figure-2](images/02_kotlin_rto_run.gif "Running RTO Kotlin example with Docker")
 
@@ -608,7 +618,6 @@ My next point is how to run the demo application. The first step is to unzip or 
     #Authentication V2
     CLIENT_ID=<Client ID V2>
     CLIENT_SECRET=<Client Secret V2>
-    SERVICENAME=<ELEKTRON_DD or ERT_FD3_LF1>
     ```
 2. Open the command prompt and go to the project's folder.
 2. Run the following command in the command prompt application to build the project.

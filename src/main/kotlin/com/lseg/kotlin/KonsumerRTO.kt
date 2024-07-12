@@ -5,7 +5,7 @@
 // *|           Copyright (C) 2020-2023 Refinitiv. All rights reserved.                                --
 ///*|----------------------------------------------------------------------------------------------------
 
-package com.refinitiv.kotlin
+package com.lseg.kotlin
 
 import com.refinitiv.ema.access.*
 import com.refinitiv.ema.domain.login.Login.LoginRefresh
@@ -16,9 +16,9 @@ import io.github.cdimascio.dotenv.dotenv
 class KonsumerRTO {
 
     private val tokenUrlV2 = "https://api.refinitiv.com/auth/oauth2/v2/token"
-    private val itemName = "EUR="
+    //private val itemName = "EUR="
 
-    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD") {
+    fun run(clientId: String, clientSecret: String, serviceName: String = "ELEKTRON_DD", itemName: String ="EUR=") {
 
         var consumer: OmmConsumer? = null
         val oAuthCallback = OAuthcallback()
@@ -70,17 +70,26 @@ class KonsumerRTO {
 }
 
 
-fun main() {
+fun main(args: Array<String>) {
     val dotenv = dotenv {
         ignoreIfMalformed = true
         ignoreIfMissing = true
     }
     val clientId: String = dotenv["CLIENT_ID"]
     val clientSecret: String = dotenv["CLIENT_SECRET"]
-    val serviceName: String = dotenv["SERVICENAME"]
+    val serviceName = "ELEKTRON_DD"
+    var itemName = "EUR="
+
+    //Receiving -itemName from a command line parameter
+    val argsMap = args.toList().chunked(2).associate { it[0] to it[1] }
+    if (argsMap.isNotEmpty()) {
+        if (argsMap["-itemName"]?.isNotEmpty() == true) {
+            itemName = argsMap["-itemName"].toString()
+        }
+    }
 
     val appRTO = KonsumerRTO()
-    appRTO.run(clientId, clientSecret, serviceName)
+    appRTO.run(clientId, clientSecret, serviceName, itemName)
 }
 
 /* This is for example purposes, For best security, please use a proper credential store. */
@@ -167,7 +176,7 @@ class AppClient : OmmConsumerClient {
 
 
     private fun decode(fieldList: FieldList) {
-        for (fieldEntry: FieldEntry in fieldList) {
+        fieldList.forEach{ fieldEntry ->
             print(
                 "Fid ${fieldEntry.fieldId()} Name = ${fieldEntry.name()} DataType: ${
                     DataType.asString(
